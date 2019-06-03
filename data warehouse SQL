@@ -204,3 +204,17 @@ join dimcustomer c on s.customer_id = c.customer_id
 join dimemployee e on s.employee_id = e.employee_id
 join dimproduct p on s.product_id = p.product_id
 ;
+--create view of sales data
+create view salesdata
+as
+select s.orderid, s.quantity, s.extendedpriceamount, s.discountamount, s.soldamount,
+c.company_name, c.contact_name, c.contact_title, c.customer_city,
+c.customer_country, c.customer_region, c.customer_postal_code,
+e.employee_name, e.employee_title, p.product_name, p.discontinued, p.category_name,
+od.*
+from factsales s
+join dimcustomer c on c.customer_key = s.customerkey
+join dimemployee e on e.employee_key = s.employeekey
+join dimproduct p on p.product_key = s.productkey
+join dimdate od on od.datekey = s.orderdatekey
+;
