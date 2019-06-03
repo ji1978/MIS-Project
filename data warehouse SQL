@@ -1,0 +1,206 @@
+--create dimension and fact tables
+CREATE TABLE DimCustomer (
+   Customer_Key  serial  NOT NULL
+,  Customer_ID  varchar(5)   NOT NULL
+,  Company_Name  varchar(40)   DEFAULT 'N/A' NOT NULL
+,  Contact_Name  varchar(30)    DEFAULT 'N/A' NOT NULL
+,  Contact_Title  varchar(30)    DEFAULT 'N/A' NOT NULL
+,  Customer_Country  varchar(15)    DEFAULT 'N/A' NOT NULL
+,  Customer_Region  varchar(15)  DEFAULT 'N/A' NOT NULL
+,  Customer_City  varchar(15)   NOT NULL
+,  Customer_Postal_Code  varchar(10) DEFAULT 'N/A'   NOT NULL
+, CONSTRAINT PK_DimCustomer PRIMARY KEY
+( Customer_Key )
+);
+
+CREATE TABLE DimDate (
+   DateKey  int   NOT NULL
+,  Date  date   NULL
+,  FullDateUSA  nchar(11)   NOT NULL
+,  DayOfWeek  smallint   NOT NULL
+,  DayName  nchar(10)   NOT NULL
+,  DayOfMonth  smallint   NOT NULL
+,  DayOfYear  smallint   NOT NULL
+,  WeekOfYear  smallint   NOT NULL
+,  MonthName  nchar(10)   NOT NULL
+,  MonthOfYear  smallint   NOT NULL
+,  Quarter  smallint   NOT NULL
+,  QuarterName  nchar(10)   NOT NULL
+,  Year  smallint   NOT NULL
+,  IsWeekday	boolean 	NOT NULL
+, CONSTRAINT PK_DimDate PRIMARY KEY 
+( DateKey )
+) ;
+
+CREATE TABLE DimProduct (
+   ProductKey  serial  NOT NULL
+,  ProductID  int   NOT NULL
+,  ProductName  varchar(40)   NOT NULL
+,  Discontinued  nchar(1)  DEFAULT 'N' NOT NULL
+,  SupplierName  varchar(40)   NOT NULL
+,  CategoryName  varchar(15)   NOT NULL
+) ;
+
+CREATE TABLE DimEmployee (
+   EmployeeKey  serial   NOT NULL
+,  EmployeeID  int   NOT NULL
+,  EmployeeName  varchar(40)   NOT NULL
+,  EmployeeTitle  varchar(30)   NOT NULL
+, CONSTRAINT PK_DimEmployee PRIMARY KEY
+( EmployeeKey )
+) ;
+
+CREATE TABLE FactSales (
+   ProductKey  int   NOT NULL
+,  CustomerKey  int   NOT NULL
+,  EmployeeKey  int   NOT NULL
+,  OrderDateKey  int   NOT NULL
+,  ShippedDateKey  int   NOT NULL
+,  OrderID  int   NOT NULL
+,  Quantity  smallint   NOT NULL
+,  ExtendedPriceAmount  money   NOT NULL
+,  DiscountAmount  money  DEFAULT 0 NOT NULL
+,  SoldAmount  money   NOT NULL
+) ;
+ALTER TABLE FactSales ADD CONSTRAINT
+   FK_FactSales_ProductKey FOREIGN KEY
+   (ProductKey) REFERENCES DimProduct
+   (Product_Key)
+; 
+ALTER TABLE FactSales ADD CONSTRAINT
+   FK_FactSales_CustomerKey FOREIGN KEY
+   (CustomerKey) REFERENCES DimCustomer
+   (Customer_Key)
+; 
+ALTER TABLE FactSales ADD CONSTRAINT
+   FK_FactSales_EmployeeKey FOREIGN KEY
+   (EmployeeKey) REFERENCES DimEmployee
+   (Employee_Key)
+; 
+ALTER TABLE FactSales ADD CONSTRAINT
+   FK_FactSales_OrderDateKey FOREIGN KEY
+   (OrderDateKey) REFERENCES DimDate
+   (DateKey)
+; 
+ALTER TABLE FactSales ADD CONSTRAINT
+   FK_FactSales_ShippedDateKey FOREIGN KEY
+   (ShippedDateKey) REFERENCES DimDate
+   (DateKey)
+;
+--populate first row of dimension tables
+INSERT INTO DimCustomer (CustomerKey, CustomerID, CompanyName, ContactName, ContactTitle, CustomerCountry, CustomerRegion, CustomerCity, CustomerPostalCode)
+VALUES (-1, 'NONE', 'No Customer', 'None', 'None', 'None', 'None', 'None', 'None')
+;
+INSERT INTO DimProduct (ProductKey, ProductID, ProductName, Discontinued, SupplierName, CategoryName, RowIsCurrent, RowStartDate, RowEndDate, RowChangeReason)
+VALUES (-1, -1, 'None', '?', 'None', 'None')
+ ;
+INSERT INTO DimEmployee (EmployeeKey, EmployeeID, EmployeeName, EmployeeTitle)
+VALUES (-1, -1, 'None', 'None')
+;
+INSERT INTO DimDate (DateKey, Date, FullDateUSA, DayOfWeek, DayName, DayOfMonth, DayOfYear, WeekOfYear, MonthName, MonthOfYear, Quarter, QuarterName, Year, IsWeekday)
+VALUES (-1, Null, 'Unk date', 0, 'Unk date', 0, 0, 0, 'Unk month', 0, 0, 'Unk qtr', 0,0)
+;
+--stage tables
+CREATE TABLE DimCustomerStage (
+  Customer_ID  char(10)   NULL
+,  Company_Name  varchar(40)   NULL
+,  Contact_Name  varchar(30)  NULL
+,  Contact_Title  varchar(30)   NULL
+,  Address varchar(60) NULL	
+,  City  varchar(15)   NULL
+,  Region  varchar(15)  NULL
+,  Postal_Code  varchar(10)   NULL
+,  Country  varchar(15)   NULL
+);
+CREATE TABLE DimDateStage (
+   Datekey 	integer	NULL
+,  Date 	date   NULL
+,  FullDateUSA  char(11)   NULL
+,  DayOfWeek  smallint   NULL
+,  DayName  char(10)   NULL
+,  DayOfMonth  smallint   NULL
+,  DayOfYear  smallint   NULL
+,  WeekOfYear  smallint   NULL
+,  MonthName  char(10)   NULL
+,  MonthOfYear  smallint   NULL
+,  Quarter  smallint    NULL
+,  QuarterName  char(10)   NULL
+,  Year  smallint   NULL
+,  IsWeekday  boolean  NULL
+) ;
+
+CREATE TABLE DimProductstage (
+   Product_ID  smallint   NULL
+,  Product_Name  varchar(40)   NULL
+,  Discontinued  int  NULL
+,  Supplier_Name  varchar(40)   NULL
+,  Category_Name  varchar(15)   NULL
+) ;
+
+CREATE TABLE DimEmployeeStage (
+   Employee_ID  smallint   NULL
+,  First_Name  varchar(10)   NULL
+,  Last_Name varchar(20) 	NULL
+,  Title  varchar(30)   NULL
+) ;
+
+CREATE TABLE FactSalesStage (
+  product_id  smallint   NULL
+,  order_id  smallint   NULL
+,  customer_id  char(10)   NULL
+,  employee_id  smallint   NULL
+,  order_date  date   NULL
+,  shipped_date  date   NULL
+,  unit_price  real  NULL
+,  quantity  smallint   NULL
+,  discount   real	NULL
+) ;
+--populate stage tables
+--date populated from external csv
+INSERT into dimcustomerstage (Customer_ID, Company_Name, Contact_Name, Contact_Title, address, city, region, postal_code, country)
+SELECT Customer_ID, Company_Name, Contact_Name, Contact_Title, address, city, region, postal_code, country 
+FROM customers
+;
+INSERT INTO dimemployeestage (employee_id, first_name, last_name, title)
+SELECT employee_id, first_name, last_name, title
+FROM employees
+;
+INSERT INTO dimproductstage (product_id, product_name, discontinued, supplier_name, category_name)
+SELECT p.product_id, p.product_name, p.discontinued, s.company_name, c.category_name
+FROM products p JOIN suppliers s ON p.Supplier_ID = s.Supplier_ID JOIN Categories c ON c.category_ID = p.Category_ID
+;
+INSERT INTO factsalesstage (product_id, order_id, customer_id, employee_id, order_date, shipped_date, unit_price, quantity, discount)
+SELECT (product_id, d.order_id, customer_id, employee_id, order_date, shipped_date, unit_price, quantity, discount
+From order_details d JOIN orders o ON o.order_id = d.order_id
+;
+
+
+--populate dimension tables
+INSERT INTO dimemployee(employee_id, employee_name, employee_title)
+SELECT employee_id, first_name || ' ' || last_name AS employee_name, title
+FROM dimemployeestage
+;
+INSERT INTO dimcustomer(customer_id, company_name, contact_name, contact_title, customer_country, customer_region, customer_city, customer_postal_code)
+SELECT customer_id, company_name, contact_name, contact_title, country, case when (region) is null then 'N/A' else (region) end, city, case when (postal_code) is null then 'N/A' else (postal_code) end
+from dimcustomerstage
+;
+INSERT INTO dimproduct(product_id, product_name, discontinued, supplier_name, category_name)
+SELECT product_id, product_name, discontinued, supplier_name, category_name
+FROM dimproductstage
+;
+INSERT INTO DimDate (DateKey, Date, FullDateUSA, DayOfWeek, DayName, DayOfMonth, DayOfYear, WeekOfYear, MonthName, MonthOfYear, Quarter, QuarterName, Year, IsWeekday)
+SELECT DateKey, Date, FullDateUSA, DayOfWeek, DayName, DayOfMonth, DayOfYear, WeekOfYear, MonthName, MonthOfYear, Quarter, QuarterName, Year, IsWeekday
+FROM DIMDATESTAGE
+;
+--populate fact table
+insert into factsales (productkey, customerkey, employeekey, orderdatekey, shippeddatekey, orderid, quantity, extendedpriceamount, discountamount, soldamount)
+select p.product_key, c.customer_key, e.employee_key, to_char((s.order_date), 'YYYYMMDD')::int  as orderdatekey, case when to_char((s.shipped_date), 'YYYYMMDD')::int is null then -1 else to_char((s.shipped_date), 'YYYYMMDD')::int end as shippeddatekey, s.order_id, 
+quantity,
+quantity * unit_price::numeric::money as extendedpriceamount,
+quantity * unit_price::numeric::money * discount as discountamount,
+quantity * unit_price::numeric::money * (1-discount) as soldamount
+from factsalesstage s
+join dimcustomer c on s.customer_id = c.customer_id
+join dimemployee e on s.employee_id = e.employee_id
+join dimproduct p on s.product_id = p.product_id
+;
